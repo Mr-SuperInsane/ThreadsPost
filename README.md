@@ -1,163 +1,162 @@
-# Threads Post
+# ThreadsClient
 
-A Python module to handle single, carousel, and reply posts on Meta’s Threads using the Graph API.  
-This module wraps functionality such as creating containers, checking status, publishing posts, and replying to posts in a class-based interface.
+A lightweight, **unofficial** Python wrapper around the Threads Graph API that lets you publish text, image, video and carousel posts—and full reply threads—in a single call.
 
-## Table of Contents
-- [Threads Post](#threads-post)
-  - [Table of Contents](#table-of-contents)
-  - [Features](#features)
-  - [Installation](#installation)
-  - [Usage](#usage)
-  - [Example](#example)
-  - [API Reference](#api-reference)
-    - [`class ThreadsPost`](#class-threadspost)
+> **Status** : Alpha • API surface **may change** without notice
 
 ---
 
-## Features
+## ✨ Features
 
-- **Single Post**: Create a simple text or single-media post.
-- **Carousel Post**: Create a multi-media (up to 10 items) carousel post.
-- **Replies**: Reply to existing posts with either single or carousel posts.
-- **Status Checks**: Automatically checks for processing completion (videos, images).
-
----
-
-## Installation
-
-1. **Clone or Download** the repository:
-   ```bash
-   git clone https://github.com/Mr-SuperInsane/ThreadsPostModule.git
-   ```
-   or download the ZIP file and extract it.
-
-2. **Install the dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-   Make sure you have [Python 3.7+](https://www.python.org/downloads/) installed.
+| ✔ | Capability | Notes |
+|---|-------------|-------|
+| Post text, image or video | Single‑media posts | Automatically detects image vs video
+| Carousels (≤ 10 items) | Mixed images & videos | Handles container creation + publish flow
+| Reply chains | Any depth | Each reply can itself be single or carousel
+| Token validation | `verify_access_token()` | Light ping to `/me` endpoint
+| Rich status dict | Mirrors raw API IDs & timestamps | Useful for your own DB‑logging
+| Time‑zone aware | JST timestamps (Asia/Tokyo) | Easy to swap if needed
+| CL I helper | `python threads_client.py <token> <user> data.json` | For quick tests
 
 ---
 
-## Usage
+## 🔧 Installation
 
-1. **Import the Module**:
-   ```python
-   from threads_post import ThreadsPost
-   ```
+```bash
+# Clone the repo (private for now)
+$ git clone https://github.com/YOUR_ORG/threads-client.git
+$ cd threads-client
 
-2. **Instantiate and Call**:
-   ```python
-   # Create an instance
-   poster = ThreadsPost()
-   
-   # Prepare your post_data
-   post_data = {
-       "accessToken": "<your_access_token>",
-       "userId": "<threads_username>",
-       "mainPost": {
-           "content": "Hello, Threads!",
-           "media": ["<image_or_video_url>"]
-       },
-       "replyPost": [
-           {
-               "content": "This is a reply",
-               "media": ["<image_or_video_url>"]
-           }
-           # ... more replies if needed
-       ]
-   }
-
-   # Post
-   poster.post(post_data)
-   ```
-
-3. **Check Logs**:  
-   The module prints out status information (e.g., container IDs, creation times) which you can log or debug.
-
----
-
-## Example
-
-Here’s a minimal code example that uses `ThreadsPost`:
-
-```python
-from threads_post import ThreadsPost
-
-def main():
-    # Replace these with your own valid access token, user ID, etc.
-    post_data = {
-        "accessToken": "YOUR_LONG_ACCESS_TOKEN",
-        "userId": "your_threads_username",
-        "mainPost": {
-            "content": "My first Threads Post via the API!",
-            "media": []
-        },
-        # Optional: Replies
-        "replyPost": [
-            {
-                "content": "This is a reply to my post",
-                "media": []
-            }
-        ]
-    }
-
-    # Create a ThreadsPost instance and make the post
-    poster = ThreadsPost()
-    poster.post(post_data)
-
-if __name__ == "__main__":
-    main()
+# Install into the current env
+$ pip install -U .
 ```
 
-1. **Run** the above script (`python main.py`).
-2. **Observe** the console output for created container IDs, published post IDs, etc.
+or
+
+```bash
+# PyPI
+pip install ThreadsPost
+```
+
+> The library is pure‑Python (3.8+) and has **only two runtime deps**: `requests` and `pytz`.
 
 ---
 
-## API Reference
+## 🚀 Quick‑start
 
-### `class ThreadsPost`
+```python
+from threads_client import ThreadsClient
 
-**`ThreadsPost()`**  
-Constructor; initializes any default configurations.
+ACCESS_TOKEN = "<long‑lived user token>"
+USER_ID      = "insane_nao"   # ←  without the leading "@"
 
----
+client = ThreadsClient(access_token=ACCESS_TOKEN, user_id=USER_ID)
 
-**`ThreadsPost.post(post_data)`**  
-Main entry point to create a single or carousel Threads post (and optionally create replies).
+main_post = {
+    "content": "📸 Trip highlights!",
+    "media": ["https://example.com/photo1.png", "https://example.com/video1.mp4"],  # <= 10 items
+}
 
-- **Parameters**:
-  - `post_data`: Dictionary with required fields:
-    - `accessToken` (str): Valid Threads Graph API access token.
-    - `userId` (str): Threads username or ID.
-    - `mainPost` (dict): Contains the main post’s content and media list.
-      - `content` (str, optional): Text to post.
-      - `media` (list, optional): URLs of images or videos.
-    - `replyPost` (list, optional): A list of replies, each a dict of `content` and `media`.
-- **Raises**:
-  - `ValueError` if the required fields are missing or invalid.
-  - `Exception` if the API calls fail or time out.
-  
----
+replies = [
+    {"content": "Behind the scenes", "media": []},
+    {"content": "Full clip here", "media": ["https://example.com/video2.mp4"]},
+]
 
-**`ThreadsPost.singlePost(access_token, apiUserId, content, media, status, user_id)`**  
-Handles single media or text-only post creation.
-
-**`ThreadsPost.carouselPost(access_token, apiUserId, content, media, status, user_id)`**  
-Handles multi-media carousel post creation.
-
-**`ThreadsPost.replyPost(access_token, apiUserId, replyPostData, id)`**  
-Handles posting replies (both single and carousel).
-
-**`ThreadsPost.get_api_user_id(access_token)`**  
-Retrieves the user ID from the provided access token.
-
-**`ThreadsPost.checkStatus(access_token, container_id, media_type)`**  
-Checks the status of media processing up to a specified timeout (3 minutes).
+status = client.post(main_post, replies)
+print(status["postUrl"])  # → https://www.threads.net/@insane_nao/post/⋯
+```
 
 ---
 
+## 🛠 API Reference
 
-**Happy Posting on Threads!**
+### `ThreadsClient(access_token: str, user_id: str)`
+Creates a client bound to a single user.
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `access_token` | `str` | Long‑lived user token obtained from Meta App Dashboard. |
+| `user_id` | `str` | Threads username **without** the `@`. |
+
+---
+
+### `post(main_post: dict, reply_posts: list[dict] | None = None) -> dict`
+Publishes a root post then optionally a chain of replies.
+
+`main_post` / `reply_posts[i]` schema
+```python
+{
+  "content": "Hello world",           # str – optional if `media` present
+  "media": [                          # list[str] – ≤ 10
+      "https://…/image.png",          # supports .jpg/.png
+      "https://…/clip.mp4",           # or .mp4/.mov
+  ]
+}
+```
+
+Returns a **status dict** that includes every container/post ID, creation timestamps (JST) and the final permalink.
+
+---
+
+### `verify_access_token() -> bool`
+Pings `/me` and returns **True** if the token is valid.
+
+---
+
+## ⚙️ Environment & Limits
+
+* **Threads Graph API v1.0** endpoints are hard‑coded (`https://graph.threads.net/v1.0`).
+* Carousels are capped at **10 media items** (`MAX_MEDIA_NUM`).
+* Media processing timeout: **3 minutes** per item.
+* Publish retries: single (60 attempts × 3 s) · carousel (300 × 5 s).
+
+Adjust these constants in `threads_client.py` if your needs differ.
+
+---
+
+## ❗ Error Handling
+All HTTP and logical failures raise **`ThreadsClientError`** with the raw API payload in `.args[0]`.
+
+```python
+from threads_client import ThreadsClient, ThreadsClientError
+try:
+    client.post(main_post)
+except ThreadsClientError as exc:
+    # `exc.args[0]` → JSON body from Threads API
+    raise
+```
+
+---
+
+## 📝 License
+
+```
+MIT License
+
+Copyright (c) 2025 Nao Matsukami
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+---
+
+## 🙏 Acknowledgements
+
+This wrapper is merely syntactic sugar over Meta's official Threads Graph API. Kudos to the engineering teams who built the underlying infrastructure.
+
